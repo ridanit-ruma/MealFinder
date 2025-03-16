@@ -23,7 +23,7 @@ export class NeisMealService {
             date: mealInfo.mealDate,
             dish: mealInfo.mealInfo.dish,
             cal: mealInfo.mealInfo.cal,
-            nutr: mealInfo.mealInfo.nutr,
+            nutritionInfo: mealInfo.mealInfo.nutr,
         };
     }
     private async fetchMealData(date: string, code: number) {
