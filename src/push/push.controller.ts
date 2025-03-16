@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Logger, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Logger, Post, Query } from '@nestjs/common';
 import { PushService } from './push.service';
 import * as webPush from 'web-push';
 import { ConfigService } from '@nestjs/config';
@@ -12,10 +12,11 @@ export class PushController {
 
     @Post('subscribe')
     async subscribe(@Body() subscription: webPush.PushSubscription) {
-        await this.pushService.addSubscriptionInfo(subscription);
+        const id = await this.pushService.addSubscriptionInfo(subscription);
         Logger.debug('New subscription info: ', subscription);
-        return { status: 'ok' };
+        return { status: 'ok', id };
     }
+
     @Get('send')
     async send(@Query('key') key: string) {
         Logger.debug(`Received request to send push notifications | Key: ${key}`);
@@ -24,5 +25,11 @@ export class PushController {
             await this.pushService.sendPushNotifications();
             return { status: 'ok' };
         }
+    }
+
+    @Post('unsubscribe')
+    async unsubscribe(@Body() { id }: { id: number }) {
+        await this.pushService.removeSubscriptionInfo(id);
+        return { status: 'ok' };
     }
 }
