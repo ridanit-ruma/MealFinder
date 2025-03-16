@@ -5,10 +5,14 @@ import { MealData, NeisMeal } from './neis-meal.interface';
 import { Logger } from '@nestjs/common';
 import * as moment from 'moment-timezone';
 import { Cron } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class NeisMealService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private configService: ConfigService,
+    ) {}
     async getReadyMealData(code: number) {
         const today = moment().tz('Asia/Seoul');
         if (today.hours() >= 13) {
@@ -23,7 +27,7 @@ export class NeisMealService {
         };
     }
     private async fetchMealData(date: string, code: number) {
-        const apiUrl = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${process.env.KEY}&Type=json&ATPT_OFCDC_SC_CODE=${process.env.ATPT_OFCDC_SC_CODE}&SD_SCHUL_CODE=${process.env.SD_SCHUL_CODE}&MMEAL_SC_CODE=${code}&MLSV_YMD=${date}`;
+        const apiUrl = `https://open.neis.go.kr/hub/mealServiceDietInfo?KEY=${this.configService.getOrThrow('KEY')}&Type=json&ATPT_OFCDC_SC_CODE=${this.configService.getOrThrow('ATPT_OFCDC_SC_CODE')}&SD_SCHUL_CODE=${this.configService.getOrThrow('SD_SCHUL_CODE')}&MMEAL_SC_CODE=${code}&MLSV_YMD=${date}`;
         try {
             const response = await fetch(apiUrl);
             const data = (await response.json()) as NeisMeal;
