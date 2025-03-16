@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model meals {
+  mealId   Int    @id @default(autoincrement())
+  mealCode Int    @db.TinyInt
+  mealDate String @db.VarChar(10)
+  mealInfo Json
+}
+
+model subscriptions {
+  subscriptionId   Int    @id @default(autoincrement())
+  subscriptionInfo String @db.LongText
+}
