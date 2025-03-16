@@ -21,6 +21,7 @@ export class PushService {
             this.VAPID_KEYS.privateKey ?? '',
         );
     }
+
     async sendPushNotification(subscription: webPush.PushSubscription, payload: PushPayload, subscriptionId: number) {
         try {
             await webPush.sendNotification(subscription, JSON.stringify(payload));
@@ -37,13 +38,25 @@ export class PushService {
             }
         }
     }
-    async addSubscriptionInfo(subscription: webPush.PushSubscription) {
-        await this.prisma.subscriptions.create({
+
+    async addSubscriptionInfo(subscription: webPush.PushSubscription): Promise<number> {
+        const sub = await this.prisma.subscriptions.create({
             data: {
                 subscriptionInfo: JSON.stringify(subscription),
             },
         });
+
+        return sub.subscriptionId;
     }
+
+    async removeSubscriptionInfo(subscriptionId: number) {
+        await this.prisma.subscriptions.delete({
+            where: {
+                subscriptionId: subscriptionId,
+            },
+        });
+    }
+
     @Cron('0 0 12 * * *')
     async sendPushNotifications() {
         try {
@@ -55,8 +68,10 @@ export class PushService {
             await Promise.all(
                 subscriptions.map(async (subscription) => {
                     const parsedSubscription = JSON.parse(subscription.subscriptionInfo) as webPush.PushSubscription;
-                    Logger.debug('Sending push notification');
-                    await this.sendPushNotification(parsedSubscription, payload, subscription.subscriptionId);
+                    Logger.debug('Sending push notification to:', parsedSubscription);
+                    await this.sendPushNotification(parsedSubscription, payload, subscription.subscriptionId).catch(
+                        (err) => Logger.error(err),
+                    );
                 }),
             );
         } catch (error) {
