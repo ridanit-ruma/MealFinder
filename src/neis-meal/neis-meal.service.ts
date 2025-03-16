@@ -15,7 +15,7 @@ export class NeisMealService {
     ) {}
     async getReadyMealData(code: number) {
         const today = moment().tz('Asia/Seoul');
-        if (today.hours() >= 13) {
+        if (today.hours() >= 17) {
             today.add(1, 'days');
         }
         const mealInfo = await this.getMealData(today.format('YYYYMMDD'), code);

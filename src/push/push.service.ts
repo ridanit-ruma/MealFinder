@@ -33,6 +33,7 @@ export class PushService {
                         subscriptionId: subscriptionId,
                     },
                 });
+                Logger.log('Deleted subscription due to error');
             } catch (error) {
                 Logger.error('Error deleting subscription', error);
             }
@@ -57,25 +58,44 @@ export class PushService {
         });
     }
 
-    @Cron('0 0 12 * * *')
-    async sendPushNotifications() {
+    async sendPushNotifications(code: number) {
         try {
             const subscriptions = await this.prisma.subscriptions.findMany();
+            const mealDataRaw = (await this.neisMealService.getReadyMealData(code)).dish;
+            if (!(mealDataRaw instanceof Array)) return;
+            const mealData = mealDataRaw.map((meal) => {
+                return meal.split(' ')[1];
+            });
             const payload = {
                 title: '오늘의 급식이 도착했습니다!',
-                body: '급식을 확인해보세요!',
+                body: mealData.join(', '),
             };
             await Promise.all(
                 subscriptions.map(async (subscription) => {
                     const parsedSubscription = JSON.parse(subscription.subscriptionInfo) as webPush.PushSubscription;
-                    Logger.debug('Sending push notification to:', parsedSubscription);
+                    Logger.debug(`Sending push notification to: ${subscription.subscriptionId}`);
                     await this.sendPushNotification(parsedSubscription, payload, subscription.subscriptionId).catch(
                         (err) => Logger.error(err),
                     );
                 }),
             );
         } catch (error) {
-            console.error('Error fetching subscriptions:', error);
+            Logger.error('Error fetching subscriptions', error);
         }
+    }
+
+    @Cron('0 0 8 * * *')
+    async sendBreakfastPushNotifications() {
+        await this.sendPushNotifications(1);
+    }
+
+    @Cron('0 0 12 * * *')
+    async sendLunchPushNotifications() {
+        await this.sendPushNotifications(2);
+    }
+
+    @Cron('0 0 16 * * *')
+    async sendDinnerPushNotifications() {
+        await this.sendPushNotifications(3);
     }
 }
